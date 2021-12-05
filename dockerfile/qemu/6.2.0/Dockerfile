@@ -4,17 +4,11 @@
 FROM arm64v8/python:3.9-buster AS qemu-build-base
 
 WORKDIR /   
-ADD https://github.com/DF-Kyun/MyTools/blob/master/mirror/debian-buster-tsinghua-http/sources.list
-/etc/apt/sources.list
+ADD https://github.com/DF-Kyun/MyTools/blob/master/mirror/debian-buster-tsinghua-http/sources.list /etc/apt/sources.list
 RUN set -ex;\
     echo "101.6.15.130 mirrors.tuna.tsinghua.edu.cn" >> /etc/hosts;\
-    ls /usr/bin/gcc* -l;\
     apt-get update;\
-    apt-get install -y git;
-    #apt-get upgrade -y;\
-    #apt-get install -y  ninja-build=1.8.2;
-    #apt-get install -y  clang-6.0;
-RUN set -ex;\
+    apt-get install -y git;\
     echo "180.97.125.228 gitee.com" >> /etc/hosts;\
     git clone --depth=1 --branch=v1.8.2 https://gitee.com/mirrors/ninja.git ninja;\
     cd ninja;\
