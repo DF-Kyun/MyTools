@@ -1,0 +1,50 @@
+apiVersion: v1
+data:
+  db-init.sh: |
+    #!/bin/sh
+    set -ex
+
+    echo "waiting for mongo ready"
+    until mongo --eval "db.adminCommand('ping')"; do
+       echo "retrying...."
+       sleep 5
+    done
+    echo "init mongo data"
+    if mongo localhost:27017/insight --username cicd --password 123456aB   --eval "db.getCollectionNames()"
+    then
+       echo "data exist"
+    else
+       mongo << EOF
+       use admin
+       db.createUser({user: "root",pwd: "root",roles: [{"role" : "root","db" : "admin"}]})
+       db.auth('root', 'root')
+       use insight
+       db.createUser({user: "cicd",pwd: "123456aB",roles: [{"role" : "readWrite","db" : "insight"},{"role" : "dbAdmin","db" : "insight"},{"role" : "userAdmin","db" : "insight"}]})
+       db.createCollection("group")
+       db.getCollection("group").insert({name: "管理组",users: [{_id: "dabfe302-bba6-4754-b917-3315312f18ef",name: "admin",msgname: "admin","e_mail": "admin@inspur.com",group: "管理组"}, {_id: "dabfe302-bba6-4754-b917-3315312f18e1",name: "superadmin",msgname: "superadmin","e_mail": "superadmin@inspur.com",group: "管理组"},],role: "admin"})
+    EOF
+       exitStatus=`echo $?`
+       if [[ "$exitStatus" == '0' ]]
+       then
+          echo "init data finish"
+       else
+          echo 'init data err'
+          echo 1
+       fi
+    fi
+    
+  start.sh: |
+    #!/bin/sh
+
+    echo "start init data"
+    bash /tmp/db-init.sh &
+    
+    echo "start mongo"
+    mongod --bind_ip_all --auth
+    
+kind: ConfigMap
+metadata:
+  name: insight-mongo
+  namespace: cnp-system
+  labels:
+    app: insight-mongo
